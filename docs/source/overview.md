@@ -4,8 +4,6 @@ The *kubespawner* (also known as JupyterHub Kubernetes Spawner) enables JupyterH
 single-user notebook servers on a [Kubernetes](https://kubernetes.io/)
 cluster.
 
-You can read a list of all the spawner options [available on ReadTheDocs](http://jupyterhub-kubespawner.readthedocs.io/en/latest/spawner.html#module-kubespawner.spawner).
-
 ## Features ##
 
 Kubernetes is an open-source system for automating deployment, scaling, and
@@ -23,7 +21,7 @@ simultaneous users), Kubernetes is a wonderful way to do it. Features include:
   monitoring and failover for the hub process itself.
 
 * Spawn multiple hubs in the same kubernetes cluster, with support for
-  [namespaces](http://kubernetes.io/docs/admin/namespaces/). You can limit the
+  [namespaces](https://kubernetes.io/docs/tasks/administer-cluster/namespaces/). You can limit the
   amount of resources each namespace can use, effectively limiting the amount
   of resources a single JupyterHub (and its users) can use. This allows
   organizations to easily maintain multiple JupyterHubs with just one
@@ -31,18 +29,19 @@ simultaneous users), Kubernetes is a wonderful way to do it. Features include:
   utilization.
 
 * Provide guarantees and limits on the amount of resources (CPU / RAM) that
-  single-user notebooks can use. Kubernetes has comprehensive [resource control](http://kubernetes.io/docs/user-guide/compute-resources/) that can
+  single-user notebooks can use. Kubernetes has comprehensive [resource control](https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/) that can
   be used from the spawner.
 
-* Mount various types of [persistent volumes](http://kubernetes.io/docs/user-guide/persistent-volumes/)
+* Mount various types of
+  [persistent volumes](https://kubernetes.io/docs/concepts/storage/persistent-volumes/)
   onto the single-user notebook's container.
 
 * Control various security parameters (such as userid/groupid, SELinux, etc)
-  via flexible [Pod Security Policies](http://kubernetes.io/docs/user-guide/pod-security-policy/).
+  via flexible [Pod Security Policies](https://kubernetes.io/docs/concepts/policy/pod-security-policy/).
 
 * Run easily in multiple clouds (or on your own machines). Helps avoid vendor
   lock-in. You can even spread out your cluster across
-  [multiple clouds at the same time](http://kubernetes.io/docs/user-guide/federation/).
+  [multiple clouds at the same time](https://kubernetes.io/docs/concepts/cluster-administration/federation/).
 
 In general, Kubernetes provides a ton of well thought out, useful features -
 and you can use all of them along with this spawner.
@@ -53,40 +52,13 @@ and you can use all of them along with this spawner.
 
 Everything should work from Kubernetes v1.2+.
 
-The [Kube DNS addon](http://kubernetes.io/docs/user-guide/connecting-applications/#dns)
+The [Kube DNS addon](https://kubernetes.io/docs/concepts/services-networking/connect-applications-service/#dns)
 is not strictly required - the spawner uses
-[environment variable](http://kubernetes.io/docs/user-guide/connecting-applications/#environment-variables)
+[environment variable](https://kubernetes.io/docs/concepts/services-networking/connect-applications-service/#environment-variables)
 based discovery instead. Your kubernetes cluster will need to be configured to
 support the types of volumes you want to use.
 
 If you are just getting started and want a kubernetes cluster to play with,
-[Google Container Engine](https://cloud.google.com/container-engine/) is
+[Google Container Engine](https://cloud.google.com/kubernetes-engine/) is
 probably the nicest option. For AWS/Azure,
 [kops](https://github.com/kubernetes/kops) is probably the way to go.
-
-## Getting help ##
-
-We encourage you to ask questions on the
-[Jupyter mailing list](https://groups.google.com/forum/#!forum/jupyter).
-You can also participate in development discussions or get live help on
-[Gitter](https://gitter.im/jupyterhub/jupyterhub).
-
-## License ##
-
-We use a shared copyright model that enables all contributors to maintain the
-copyright on their contributions.
-
-All code is licensed under the terms of the revised BSD license.
-
-## Resources
-
-#### JupyterHub and kubespawner
-
-- [Reporting Issues](https://github.com/jupyterhub/kubespawner/issues)
-- [Documentation for JupyterHub](http://jupyterhub.readthedocs.io/en/latest/) | [PDF (latest)](https://media.readthedocs.org/pdf/jupyterhub/latest/jupyterhub.pdf) | [PDF (stable)](https://media.readthedocs.org/pdf/jupyterhub/stable/jupyterhub.pdf)
-- [Documentation for JupyterHub's REST API](http://petstore.swagger.io/?url=https://raw.githubusercontent.com/jupyter/jupyterhub/master/docs/rest-api.yml#/default)
-
-#### Jupyter
-
-- [Documentation for Project Jupyter](http://jupyter.readthedocs.io/en/latest/index.html) | [PDF](https://media.readthedocs.org/pdf/jupyter/latest/jupyter.pdf)
-- [Project Jupyter website](https://jupyter.org)
