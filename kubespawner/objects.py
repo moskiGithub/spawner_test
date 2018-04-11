@@ -189,7 +189,7 @@ def make_pod(
             if 'user' in item_dir[0]:
                 user_volumes.append(V1Volume(name='data'+item_dir[0], nfs={'server':env['NFSSERVER'], 'path':env['NFSPATH']+'/data/'+item_dir[1]}))
                 user_volumes_mount.append(V1VolumeMount(
-                    mount_path='/home/jovyan/data/'
+                    mount_path='/home/jovyan/data/',
                     name='data'+item_dir[0],
                     sub_path=item_dir[1],
                     read_only=True
@@ -197,7 +197,7 @@ def make_pod(
             elif 'admin' in item_dir[0]:
                 user_volumes.append(V1Volume(name='data'+item_dir[0], nfs={'server':env['NFSSERVER'], 'path':env['NFSPATH']+'/data/'+item_dir[1]}))
                 user_volumes_mount.append(V1VolumeMount(
-                    mount_path='/home/jovyan/data/'
+                    mount_path='/home/jovyan/data/',
                     name='data'+item_dir[0],
                     sub_path=item_dir[1],
                     read_only=False
@@ -207,7 +207,7 @@ def make_pod(
                 user_volumes_mount.append(V1VolumeMount(
                     mount_path='/home/jovyan',
                     name='home'+item_dir[0],
-                    read_only=False
+                    read_only=False,
                     sub_path=item_dir[1]
                     ))
 
