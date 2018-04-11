@@ -187,7 +187,7 @@ def make_pod(
         for line in userdir.readlines():
             item_dir = line.strip().split(':')
             if 'user' in item_dir[0]:
-                user_volumes.append(V1Volume(name='data'+item_dir[0], nfs={'service':env['NFSSERVER'], 'path':env['NFSPATH']+'/data/'+item_dir[1]}))
+                user_volumes.append(V1Volume(name='data'+item_dir[0], nfs={'server':env['NFSSERVER'], 'path':env['NFSPATH']+'/data/'+item_dir[1]}))
                 user_volumes_mount.append(V1VolumeMount(
                     mount_path='/home/jovyan/data/'+item_dir[1],
                     name='data'+item_dir[0],
@@ -195,7 +195,7 @@ def make_pod(
                     read_only=True
                     ))
             elif 'admin' in item_dir[0]:
-                user_volumes.append(V1Volume(name='data'+item_dir[0], nfs={'service':env['NFSSERVER'], 'path':env['NFSPATH']+'/data/'+item_dir[1]}))
+                user_volumes.append(V1Volume(name='data'+item_dir[0], nfs={'server':env['NFSSERVER'], 'path':env['NFSPATH']+'/data/'+item_dir[1]}))
                 user_volumes_mount.append(V1VolumeMount(
                     mount_path='/home/jovyan/data/'+item_dir[1],
                     name='data'+item_dir[0],
@@ -203,7 +203,7 @@ def make_pod(
                     read_only=False
                     ))
             elif 'home' in item_dir[0]:
-                user_volumes.append(V1Volume(name='home'+item_dir[0], nfs={'service':env['NFSSERVER'], 'path':env['NFSPATH']+'/user/'+item_dir[1]}))
+                user_volumes.append(V1Volume(name='home'+item_dir[0], nfs={'server':env['NFSSERVER'], 'path':env['NFSPATH']+'/user/'+item_dir[1]}))
                 user_volumes_mount.append(V1VolumeMount(
                     mount_path='/home/jovyan',
                     name='home'+item_dir[0],
