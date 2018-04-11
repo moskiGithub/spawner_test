@@ -183,30 +183,29 @@ def make_pod(
 
     user_volumes = []
     user_volumes_mount = []
+    user_volumes.append(V1Volume(name='data', nfs={'server':env['NFSSERVER'], 'path':env['NFSPATH']+'/data/'}))
     with open('/tmp/'+name, 'r') as userdir:
         for line in userdir.readlines():
             item_dir = line.strip().split(':')
             if 'user' in item_dir[0]:
-                user_volumes.append(V1Volume(name='data'+item_dir[0], nfs={'server':env['NFSSERVER'], 'path':env['NFSPATH']+'/data/'+item_dir[1]}))
                 user_volumes_mount.append(V1VolumeMount(
-                    mount_path='/home/jovyan/data/',
-                    name='data'+item_dir[0],
+                    mount_path='/home/jovyan/data/'+item_dir[1],
+                    name='data',
                     sub_path=item_dir[1],
                     read_only=True
                     ))
             elif 'admin' in item_dir[0]:
-                user_volumes.append(V1Volume(name='data'+item_dir[0], nfs={'server':env['NFSSERVER'], 'path':env['NFSPATH']+'/data/'+item_dir[1]}))
                 user_volumes_mount.append(V1VolumeMount(
-                    mount_path='/home/jovyan/data/',
-                    name='data'+item_dir[0],
+                    mount_path='/home/jovyan/data/'+item_dir[1],
+                    name='data',
                     sub_path=item_dir[1],
                     read_only=False
                     ))
             elif 'home' in item_dir[0]:
-                user_volumes.append(V1Volume(name='home'+item_dir[0], nfs={'server':env['NFSSERVER'], 'path':env['NFSPATH']+'/user/'+item_dir[1]}))
+                user_volumes.append(V1Volume(name='home', nfs={'server':env['NFSSERVER'], 'path':env['NFSPATH']+'/user/'+item_dir[1]}))
                 user_volumes_mount.append(V1VolumeMount(
                     mount_path='/home/jovyan',
-                    name='home'+item_dir[0],
+                    name='home',
                     read_only=False,
                     sub_path=item_dir[1]
                     ))
