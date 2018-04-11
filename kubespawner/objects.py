@@ -185,7 +185,7 @@ def make_pod(
     user_volumes_mount = []
     with open('/tmp/'+name, 'r') as userdir:
         for line in userdir.readlines():
-            item_dir = line.split(':')
+            item_dir = line.strip().split(':')
             if 'user' in item_dir[0]:
                 user_volumes.append(V1Volume(name='data'+item_dir[0], nfs={'service':env['NFSSERVER'], 'path':env['NFSPATH']+'/data/'+item_dir[1]}))
                 user_volumes_mount.append(V1VolumeMount(
