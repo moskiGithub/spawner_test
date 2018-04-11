@@ -202,7 +202,7 @@ def make_pod(
                     read_only=False
                     ))
             elif 'home' in item_dir[0]:
-                user_volumes.append(V1Volume(name='home', nfs={'server':env['NFSSERVER'], 'path':env['NFSPATH']+'/user/'+item_dir[1]}))
+                user_volumes.append(V1Volume(name='home', nfs={'server':env['NFSSERVER'], 'path':env['NFSPATH']+'/user/'}))
                 user_volumes_mount.append(V1VolumeMount(
                     mount_path='/home/jovyan',
                     name='home',
