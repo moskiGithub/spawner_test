@@ -183,7 +183,7 @@ def make_pod(
 
     user_volumes = []
     user_volumes_mount = []
-    with open('/tmp/'+name, r) as userdir:
+    with open('/tmp/'+name, 'r') as userdir:
         for line in userdir.readlines():
             item_dir = line.split(':')
             if 'user' in item_dir[0]:
