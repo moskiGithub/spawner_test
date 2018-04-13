@@ -189,14 +189,14 @@ def make_pod(
             item_dir = line.strip().split(':')
             if 'user' in item_dir[0]:
                 user_volumes_mount.append(V1VolumeMount(
-                    mount_path='/home/jovyan/data/'+item_dir[1],
+                    mount_path='/tmp/data/'+item_dir[1],
                     name='data',
                     sub_path=item_dir[1],
                     read_only=True
                     ))
             elif 'admin' in item_dir[0]:
                 user_volumes_mount.append(V1VolumeMount(
-                    mount_path='/home/jovyan/data/'+item_dir[1],
+                    mount_path='/tmp/data/'+item_dir[1],
                     name='data',
                     sub_path=item_dir[1],
                     read_only=False
