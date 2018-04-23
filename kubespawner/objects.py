@@ -307,9 +307,9 @@ def get_ldap_info(username):
             "user": []
         }
     return {
-        "home": ldap_entry.home.values(),
-        "admin": ldap_entry.projectsadmin.values(),
-        "user": ldap_entry.projectsuser.values()
+        "home": ldap_entry.home.values,
+        "admin": ldap_entry.projectsadmin.values,
+        "user": ldap_entry.projectsuser.values
     }
 
 def make_pvc(
