@@ -8,11 +8,12 @@ setup(
         'pyYAML',
         'kubernetes==4.*',
         'escapism',
+        'ldap3'
     ],
     setup_requires=['pytest-runner'],
     tests_require=['pytest'],
     description='JupyterHub Spawner targeting Kubernetes',
-    url='http://github.com/jupyterhub/kubespawner',
+    url='https://github.com/moskiGithub/spawner_test.git',
     author='Yuvi Panda',
     author_email='yuvipanda@gmail.com',
     license='BSD',
