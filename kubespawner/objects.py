@@ -298,7 +298,7 @@ def get_ldap_info(username):
     ldap_conn = Connection(ldap_server, user = ldap_info['logindn'], password = ldap_info['passwd'])
     ldap_conn.open()
     ldap_conn.search(ldap_info['basedn'], '(cn=%s)'.format(username), attributes=ldap_info["attrs"])
-    ldap_entry = ldap_conn.entry[0]
+    ldap_entry = ldap_conn.entries[0]
     return {
         "home": ldap_entry.home.values(),
         "admin": ldap_entry.projectsadmin.values(),
