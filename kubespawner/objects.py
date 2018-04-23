@@ -295,10 +295,10 @@ def get_ldap_info(username):
                 "basedn":os.getenv('LDAPBASEDN'),
                 "attrs":["home","projectsadmin", "projectsuser"]}
     ldap_server = Server(ldap_info['Server'], get_info=ALL)
-    ldap_conn = Connection(Server, user = ldap_info['logindn'], password = ldap_info['passwd'])
+    ldap_conn = Connection(ldap_server, user = ldap_info['logindn'], password = ldap_info['passwd'])
     ldap_conn.open()
     ldap_conn.search(ldap_info['basedn'], '(cn=%s)'.format(username), attributes=ldap_info["attrs"])
-    ldap_entry = ldap_conn.entry
+    ldap_entry = ldap_conn.entry[0]
     return {
         "home": ldap_entry.home.values(),
         "admin": ldap_entry.projectsadmin.values(),
