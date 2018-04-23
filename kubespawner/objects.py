@@ -5,6 +5,8 @@ import json
 from urllib.parse import urlparse
 import escapism
 import string
+import os
+from ldap3 import Server, Connection, ALL
 
 from kubernetes.client.models import (
     V1Pod, V1PodSpec, V1PodSecurityContext,
@@ -181,34 +183,35 @@ def make_pod(
         resources=V1ResourceRequirements()
     )
 
+    nfs_info={"Server":os.getenv('NFSSERVER'),"Path":os.getenv('NFSPATH')}
+
     user_volumes = []
     user_volumes_mount = []
-    user_volumes.append(V1Volume(name='data', nfs={'server':env['NFSSERVER'], 'path':env['NFSPATH']+'/data/'}))
-    with open('/tmp/'+name, 'r') as userdir:
-        for line in userdir.readlines():
-            item_dir = line.strip().split(':')
-            if 'user' in item_dir[0]:
-                user_volumes_mount.append(V1VolumeMount(
-                    mount_path='/tmp/data/'+item_dir[1],
-                    name='data',
-                    sub_path=item_dir[1],
-                    read_only=True
-                    ))
-            elif 'admin' in item_dir[0]:
-                user_volumes_mount.append(V1VolumeMount(
-                    mount_path='/tmp/data/'+item_dir[1],
-                    name='data',
-                    sub_path=item_dir[1],
-                    read_only=False
-                    ))
-            elif 'home' in item_dir[0]:
-                user_volumes.append(V1Volume(name='home', nfs={'server':env['NFSSERVER'], 'path':env['NFSPATH']+'/user/'}))
-                user_volumes_mount.append(V1VolumeMount(
-                    mount_path='/home/jovyan',
-                    name='home',
-                    read_only=False,
-                    sub_path=item_dir[1]
-                    ))
+    user_volumes.append(V1Volume(name='data', nfs={'server':nfs_info['Server'], 'path': nfs_info['Path']+'/data/'}))
+
+    userdir =  get_ldap_info(name.split('-')[1])
+    for item in userdir['home']:
+        user_volumes.append(V1Volume(name='home', nfs={'server':nfs_info['Server'], 'path': nfs_info['Path'] + '/user/'}))
+        user_volumes_mount.append(V1VolumeMount(
+            mount_path='/home/jovyan',
+            name='home',
+            read_only=False,
+            sub_path=item
+        ))
+    for item in userdir['admin']:
+        user_volumes_mount.append(V1VolumeMount(
+            mount_path='/tmp/data/' + item,
+            name='data',
+            sub_path=item,
+            read_only=False
+        ))
+    for item in userdir['user']:
+        user_volumes_mount.append(V1VolumeMount(
+            mount_path='/tmp/data/' + item,
+            name='data',
+            sub_path=item,
+            read_only=True
+        ))
 
     if service_account is None:
         # Add a hack to ensure that no service accounts are mounted in spawned pods
@@ -285,6 +288,22 @@ def _map_attribute(attribute_map, attribute):
     else:
         raise ValueError('Attribute must be one of {}'.format(attribute_map.values()))
 
+def get_ldap_info(username):
+    ldap_info ={"Server":os.getenv('LDAPSERVER'),
+                "logindn": os.getenv('LDAPLOGINDN'),
+                "passwd":os.getenv('LDAPPASSWD'),
+                "basedn":os.getenv('LDAPBASEDN'),
+                "attrs":["home","projectsadmin", "projectsuser"]}
+    ldap_server = Server(ldap_info['Server'], get_info=ALL)
+    ldap_conn = Connection(Server, user = ldap_info['logindn'], password = ldap_info['passwd'])
+    ldap_conn.open()
+    ldap_conn.search(ldap_info['basedn'], attributes=ldap_info["attrs"])
+    ldap_entry = ldap_conn.entry
+    return {
+        "home": ldap_entry.home.values(),
+        "admin": ldap_entry.projectsadmin.values(),
+        "user": ldap_entry.projectsuser.values()
+    }
 
 def make_pvc(
     name,
