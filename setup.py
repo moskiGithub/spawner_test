@@ -8,7 +8,7 @@ setup(
         'pyYAML',
         'kubernetes==4.*',
         'escapism',
-        'ldap3'
+        'ldap3',
     ],
     setup_requires=['pytest-runner'],
     tests_require=['pytest'],
