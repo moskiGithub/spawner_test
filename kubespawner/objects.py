@@ -293,7 +293,7 @@ def get_ldap_info(username):
                 "logindn": os.getenv('LDAPLOGINDN'),
                 "passwd":os.getenv('LDAPPASSWD'),
                 "basedn":os.getenv('LDAPBASEDN'),
-                "attrs":["home","projectsadmin", "projectsuser"]}
+                "attrs":["sn","l", "ou"]}
     ldap_server = Server(ldap_info['Server'], get_info=ALL)
     ldap_conn = Connection(ldap_server, user = ldap_info['logindn'], password = ldap_info['passwd'])
     ldap_conn.open()
@@ -307,9 +307,9 @@ def get_ldap_info(username):
             "user": []
         }
     return {
-        "home": ldap_entry.home.values,
-        "admin": ldap_entry.projectsadmin.values,
-        "user": ldap_entry.projectsuser.values
+        "home": ldap_entry.sn.values,
+        "admin": ldap_entry.l.values,
+        "user": ldap_entry.ou.values
     }
 
 def make_pvc(
