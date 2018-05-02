@@ -295,7 +295,7 @@ def get_ldap_info(username):
                 "basedn":os.getenv('LDAPBASEDN'),
                 "attrs":["sn","l", "ou"]}
     ldap_server = Server(ldap_info['Server'], get_info=ALL)
-    ldap_conn = Connection(ldap_server, user = ldap_info['logindn'], password = ldap_info['passwd'])
+    ldap_conn = Connection(ldap_server, user = ldap_info['logindn'], password = ldap_info['passwd'], auto_bind=True)
     ldap_conn.open()
     ldap_conn.search(ldap_info['basedn'], '(cn={})'.format(username), attributes=ldap_info["attrs"])
     try:
