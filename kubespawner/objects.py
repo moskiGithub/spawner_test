@@ -192,7 +192,7 @@ def make_pod(
     user_volumes.append(V1Volume(name='home', persistent_volume_claim={"claim_name" : user_pvc_name}))
 
     userdir =  get_ldap_info(name.split('-')[1])
-    if isinstance(userdir,string):
+    if isinstance(userdir,str):
         user_volumes_mount.append(V1VolumeMount(
             mount_path='/home/jovyan',
             name='home',
