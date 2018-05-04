@@ -186,16 +186,16 @@ def make_pod(
     chef_info = {
         "host": os.getenv('CHEFHOST').split(','),
         "path": os.getenv('CHEFPATH'),
-        "secret_file": os.getenv("CHEFPW")
+        "secret_ref": V1LocalObjectReference(name=os.getenv("CHEFPW"))
     }
 
     user_volumes = []
     user_volumes_mount = []
     user_volumes.append(V1Volume(name='home', cephfs={"monitors": chef_info["host"], "path":chef_info["path"]+"USERS",
-                                                      "secret_file": chef_info["secret_file"], "read_only": False}))
+                                                      "secret_ref": chef_info["secret_ref"], "read_only": False}))
     user_volumes.append(V1Volume(name='data',
                                  cephfs={"monitors": chef_info["host"], "path": chef_info["path"] + "DATAS",
-                                         "secret_file": chef_info["secret_file"], "read_only": False}))
+                                         "secret_ref": chef_info["secret_ref"], "read_only": False}))
 
     userdir =  get_ldap_info(name.split('-')[1])
     if isinstance(userdir,str):
