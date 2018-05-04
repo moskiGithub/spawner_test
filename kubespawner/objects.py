@@ -183,13 +183,19 @@ def make_pod(
         resources=V1ResourceRequirements()
     )
 
-    user_pvc_name = os.getenv('USERPVC')
-    data_pvc_name = os.getenv('DATAPVC')
+    chef_info = {
+        "host": os.getenv('CHEFHOST').split(','),
+        "path": os.getenv('CHEFPATH'),
+        "secret_file": os.getenv("CHEFPATH")
+    }
 
     user_volumes = []
     user_volumes_mount = []
-    user_volumes.append(V1Volume(name='data', persistent_volume_claim={"claim_name" : data_pvc_name}))
-    user_volumes.append(V1Volume(name='home', persistent_volume_claim={"claim_name" : user_pvc_name}))
+    user_volumes.append(V1Volume(name='home', cephfs={"monitors": chef_info["host"], "path":chef_info["path"]+"USERS",
+                                                      "secret_file": chef_info["secret_file"], "read_only": False}))
+    user_volumes.append(V1Volume(name='data',
+                                 cephfs={"monitors": chef_info["host"], "path": chef_info["path"] + "DATAS",
+                                         "secret_file": chef_info["secret_file"], "read_only": False}))
 
     userdir =  get_ldap_info(name.split('-')[1])
     if isinstance(userdir,str):
@@ -198,12 +204,11 @@ def make_pod(
             name='home',
             read_only=False
         ))
-        for item in userdir['admin']:
-            user_volumes_mount.append(V1VolumeMount(
-                mount_path='/home/jovyan/datas',
-                name='data',
-                read_only=False
-            ))
+        user_volumes_mount.append(V1VolumeMount(
+            mount_path='/home/jovyan/datas',
+            name='data',
+            read_only=False
+        ))
     else:
         for item in userdir['home']:
             user_volumes_mount.append(V1VolumeMount(
