@@ -186,7 +186,7 @@ def make_pod(
     chef_info = {
         "host": os.getenv('CHEFHOST').split(','),
         "path": os.getenv('CHEFPATH'),
-        "secret_file": os.getenv("CHEFPATH")
+        "secret_file": os.getenv("CHEFPW")
     }
 
     user_volumes = []
