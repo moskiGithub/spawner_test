@@ -183,35 +183,49 @@ def make_pod(
         resources=V1ResourceRequirements()
     )
 
-    nfs_info={"Server":os.getenv('NFSSERVER'),"Path":os.getenv('NFSPATH')}
+    user_pvc_name = os.getenv('USERPVC')
+    data_pvc_name = os.getenv('DATAPVC')
 
     user_volumes = []
     user_volumes_mount = []
-    user_volumes.append(V1Volume(name='data', nfs={'server':nfs_info['Server'], 'path': nfs_info['Path']+'/data/'}))
+    user_volumes.append(V1Volume(name='data', persistent_volume_claim={"claim_name" : data_pvc_name}))
+    user_volumes.append(V1Volume(name='home', persistent_volume_claim={"claim_name" : user_pvc_name}))
 
     userdir =  get_ldap_info(name.split('-')[1])
-    for item in userdir['home']:
-        user_volumes.append(V1Volume(name='home', nfs={'server':nfs_info['Server'], 'path': nfs_info['Path'] + '/user/'}))
+    if isinstance(userdir,string):
         user_volumes_mount.append(V1VolumeMount(
             mount_path='/home/jovyan',
             name='home',
-            read_only=False,
-            sub_path=item
-        ))
-    for item in userdir['admin']:
-        user_volumes_mount.append(V1VolumeMount(
-            mount_path='/tmp/data/' + item,
-            name='data',
-            sub_path=item,
             read_only=False
         ))
-    for item in userdir['user']:
-        user_volumes_mount.append(V1VolumeMount(
-            mount_path='/tmp/data/' + item,
-            name='data',
-            sub_path=item,
-            read_only=True
-        ))
+        for item in userdir['admin']:
+            user_volumes_mount.append(V1VolumeMount(
+                mount_path='/home/jovyan/datas',
+                name='data',
+                read_only=False
+            ))
+    else:
+        for item in userdir['home']:
+            user_volumes_mount.append(V1VolumeMount(
+                mount_path='/home/jovyan',
+                name='home',
+                read_only=False,
+                sub_path=item
+            ))
+        for item in userdir['admin']:
+            user_volumes_mount.append(V1VolumeMount(
+                mount_path='/tmp/data/' + item,
+                name='data',
+                sub_path=item,
+                read_only=False
+            ))
+        for item in userdir['user']:
+            user_volumes_mount.append(V1VolumeMount(
+                mount_path='/tmp/data/' + item,
+                name='data',
+                sub_path=item,
+                read_only=True
+            ))
 
     if service_account is None:
         # Add a hack to ensure that no service accounts are mounted in spawned pods
@@ -293,7 +307,7 @@ def get_ldap_info(username):
                 "logindn": os.getenv('LDAPLOGINDN'),
                 "passwd":os.getenv('LDAPPASSWD'),
                 "basedn":os.getenv('LDAPBASEDN'),
-                "attrs":["sn","l", "ou"]}
+                "attrs":["sn","l", "ou","title"]}
     ldap_server = Server(ldap_info['Server'], get_info=ALL)
     ldap_conn = Connection(ldap_server, user = ldap_info['logindn'], password = ldap_info['passwd'], auto_bind=True)
     ldap_conn.open()
@@ -306,10 +320,12 @@ def get_ldap_info(username):
             "admin": [],
             "user": []
         }
+    if len(ldap_entry.title.values) == 1 and ldap_entry.title.values[0] == "admin":
+        return "admin"
     return {
         "home": ldap_entry.sn.values,
         "admin": ldap_entry.l.values,
-        "user": ldap_entry.ou.values
+        "user": list(set(ldap_entry.ou.values).difference(set(ldap_entry.l.values)))
     }
 
 def make_pvc(
