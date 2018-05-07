@@ -234,7 +234,6 @@ def make_pod(
                 sub_path=item,
                 read_only=True
             ))
-    user_volumes_mount = []
     if service_account is None:
         # Add a hack to ensure that no service accounts are mounted in spawned pods
         # This makes sure that we don"t accidentally give access to the whole
