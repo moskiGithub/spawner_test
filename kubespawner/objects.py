@@ -186,17 +186,17 @@ def make_pod(
     chef_info = {
         "host": os.getenv('CHEFHOST').split(','),
         "path": os.getenv('CHEFPATH'),
-        "secret_ref": V1SecretReference(name=os.getenv("CHEFPW"), namespace="jupyterhub"),
+        "secret_ref": V1SecretReference(name=os.getenv("CHEFPW")),
         "filename":os.getenv("CHEFFILE")
     }
 
     user_volumes = []
     user_volumes_mount = []
     cephvsu = V1CephFSVolumeSource(monitors=chef_info["host"], path=chef_info["path"]+"USERS",
-                                  secret_ref=chef_info["secret_ref"], read_only = False, secret_file=chef_info["filename"])
+                                  secret_ref=chef_info["secret_ref"], read_only = False, secret_file=None)
     cephvsd = V1CephFSVolumeSource(monitors=chef_info["host"], path=chef_info["path"] + "DATAS",
                                   secret_ref=chef_info["secret_ref"], read_only=False,
-                                  secret_file=chef_info["filename"])
+                                  secret_file=None)
     user_volumes.append(V1Volume(name='home', cephfs=cephvsu))
     user_volumes.append(V1Volume(name='data',cephfs=cephvsd))
 
