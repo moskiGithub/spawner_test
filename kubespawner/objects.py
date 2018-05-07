@@ -19,7 +19,7 @@ from kubernetes.client.models import (
     V1Service, V1ServiceSpec, V1ServicePort,
     V1beta1Ingress, V1beta1IngressSpec, V1beta1IngressRule,
     V1beta1HTTPIngressRuleValue, V1beta1HTTPIngressPath,
-    V1beta1IngressBackend,V1SecretReference
+    V1beta1IngressBackend,V1SecretReference, V1CephFSVolumeSource
 )
 
 def make_pod(
@@ -192,11 +192,13 @@ def make_pod(
 
     user_volumes = []
     user_volumes_mount = []
-    user_volumes.append(V1Volume(name='home', cephfs={"monitors": chef_info["host"], "path":chef_info["path"]+"USERS",
-                                                      "secret_ref": chef_info["secret_ref"], "read_only": False, "secret_file":chef_info["filename"]}))
-    user_volumes.append(V1Volume(name='data',
-                                 cephfs={"monitors": chef_info["host"], "path": chef_info["path"] + "DATAS",
-                                         "secret_ref": chef_info["secret_ref"], "read_only": False, "secret_file":chef_info["filename"]}))
+    cephvsu = V1CephFSVolumeSource(monitors=chef_info["host"], path=chef_info["path"]+"USERS",
+                                  secret_ref=chef_info["secret_ref"], read_only = False, secret_file=chef_info["filename"])
+    cephvsd = V1CephFSVolumeSource(monitors=chef_info["host"], path=chef_info["path"] + "DATAS",
+                                  secret_ref=chef_info["secret_ref"], read_only=False,
+                                  secret_file=chef_info["filename"])
+    user_volumes.append(V1Volume(name='home', cephfs=cephvsu))
+    user_volumes.append(V1Volume(name='data',cephfs=cephvsd))
 
     userdir =  get_ldap_info(name.split('-')[1])
     if isinstance(userdir,str):
