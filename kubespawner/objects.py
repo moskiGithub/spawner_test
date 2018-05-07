@@ -19,7 +19,7 @@ from kubernetes.client.models import (
     V1Service, V1ServiceSpec, V1ServicePort,
     V1beta1Ingress, V1beta1IngressSpec, V1beta1IngressRule,
     V1beta1HTTPIngressRuleValue, V1beta1HTTPIngressPath,
-    V1beta1IngressBackend
+    V1beta1IngressBackend,V1SecretReference
 )
 
 def make_pod(
@@ -186,7 +186,7 @@ def make_pod(
     chef_info = {
         "host": os.getenv('CHEFHOST').split(','),
         "path": os.getenv('CHEFPATH'),
-        "secret_ref": {"name":os.getenv("CHEFPW")}
+        "secret_ref": V1SecretReference(name=os.getenv("CHEFPW"), namespace="jupyterhub")
     }
 
     user_volumes = []
