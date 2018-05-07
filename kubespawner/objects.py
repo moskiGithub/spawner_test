@@ -187,16 +187,16 @@ def make_pod(
         "host": os.getenv('CHEFHOST').split(','),
         "path": os.getenv('CHEFPATH'),
         "secret_ref": V1SecretReference(name=os.getenv("CHEFPW"), namespace="jupyterhub"),
-        "secref_file":os.getenv("CHEFFILE")
+        "filename":os.getenv("CHEFFILE")
     }
 
     user_volumes = []
     user_volumes_mount = []
     user_volumes.append(V1Volume(name='home', cephfs={"monitors": chef_info["host"], "path":chef_info["path"]+"USERS",
-                                                      "secret_ref": chef_info["secret_ref"], "read_only": False, "secret_file":chef_info["filename"]}))
+                                                      "secret_ref": chef_info["secret_ref"], "read_only": False, "secret_file":None}))
     user_volumes.append(V1Volume(name='data',
                                  cephfs={"monitors": chef_info["host"], "path": chef_info["path"] + "DATAS",
-                                         "secret_ref": chef_info["secret_ref"], "read_only": False, "secret_file":chef_info["filename"]}))
+                                         "secret_ref": chef_info["secret_ref"], "read_only": False, "secret_file":None}))
 
     userdir =  get_ldap_info(name.split('-')[1])
     if isinstance(userdir,str):
