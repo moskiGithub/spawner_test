@@ -189,7 +189,7 @@ def make_pod(
         "secret_ref": V1SecretReference(name=os.getenv("CHEFPW")),
         "filename":os.getenv("CHEFFILE")
     }
-
+    datasetpath = os.getenv('DATASETPATH')
     user_volumes = []
     user_volumes_mount = []
     cephvsu = V1CephFSVolumeSource(monitors=chef_info["host"], path=chef_info["path"]+"USERS",
@@ -208,7 +208,7 @@ def make_pod(
             read_only=False
         ))
         user_volumes_mount.append(V1VolumeMount(
-            mount_path='/home/jovyan/datas',
+            mount_path=datasetpath,
             name='data',
             read_only=False
         ))
@@ -222,14 +222,14 @@ def make_pod(
             ))
         for item in userdir['admin']:
             user_volumes_mount.append(V1VolumeMount(
-                mount_path='/tmp/data/' + item,
+                mount_path=os.path.join(datasetpath, item),
                 name='data',
                 sub_path=item,
                 read_only=False
             ))
         for item in userdir['user']:
             user_volumes_mount.append(V1VolumeMount(
-                mount_path='/tmp/data/' + item,
+                mount_path=os.path.join(datasetpath, item),
                 name='data',
                 sub_path=item,
                 read_only=True
