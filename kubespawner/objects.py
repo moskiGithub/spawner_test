@@ -183,27 +183,31 @@ def make_pod(
         resources=V1ResourceRequirements()
     )
 
-    chef_info = {
-        "host": os.getenv('CHEFHOST').split(','),
-        "path": os.getenv('CHEFPATH'),
-        "secret_ref": V1SecretReference(name=os.getenv("CHEFPW")),
-        "filename":os.getenv("CHEFFILE")
-    }
+    # chef_info = {
+    #     "host": os.getenv('CHEFHOST').split(','),
+    #     "path": os.getenv('CHEFPATH'),
+    #     "secret_ref": V1SecretReference(name=os.getenv("CHEFPW")),
+    #     "filename":os.getenv("CHEFFILE")
+    # }
+    nfs_info = {
+        "host":os.getenv('NFSHOST'),
+        "path":os.getenv('NFSPATH')}
     datasetpath = os.getenv('DATASETPATH')
     user_volumes = []
     user_volumes_mount = []
-    cephvsu = V1CephFSVolumeSource(monitors=chef_info["host"], path=chef_info["path"]+"USERS",
-                                  secret_ref=chef_info["secret_ref"], read_only = False, secret_file=None)
-    cephvsd = V1CephFSVolumeSource(monitors=chef_info["host"], path=chef_info["path"] + "DATAS",
-                                  secret_ref=chef_info["secret_ref"], read_only=False,
-                                  secret_file=None)
-    user_volumes.append(V1Volume(name='home', cephfs=cephvsu))
-    user_volumes.append(V1Volume(name='data',cephfs=cephvsd))
-
+    # cephvsu = V1CephFSVolumeSource(monitors=chef_info["host"], path=chef_info["path"]+"USERS",
+    #                               secret_ref=chef_info["secret_ref"], read_only = False, secret_file=None)
+    # cephvsd = V1CephFSVolumeSource(monitors=chef_info["host"], path=chef_info["path"] + "DATAS",
+    #                               secret_ref=chef_info["secret_ref"], read_only=False,
+    #                               secret_file=None)
+    # user_volumes.append(V1Volume(name='home', cephfs=cephvsu))
+    # user_volumes.append(V1Volume(name='data',cephfs=cephvsd))
+    user_volumes.append(V1Volume(name='home', nfs = {'server': nfs_info['host'], 'path': os.path.join(nfs_info['path'],'USERS')}))
+    user_volumes.append(V1Volume(name='data',nfs = {'server': nfs_info['host'], 'path': os.path.join(nfs_info['path'],'DATAS')}))
     userdir =  get_ldap_info(name.split('-')[1])
     if isinstance(userdir,str):
         user_volumes_mount.append(V1VolumeMount(
-            mount_path='/home/jovyan',
+            mount_path='/home/jovyan/Users',
             name='home',
             read_only=False
         ))
