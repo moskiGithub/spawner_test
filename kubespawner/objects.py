@@ -139,7 +139,9 @@ def make_pod(
     extra_containers:
         Extra containers besides notebook container. Used for some housekeeping jobs (e.g. crontab).
     """
-
+    userdir =  get_ldap_info(name.split('-')[1])
+    if isinstance(userdir,str):
+        run_as_uid = 0
     pod = V1Pod()
     pod.kind = "Pod"
     pod.api_version = "v1"
@@ -204,9 +206,8 @@ def make_pod(
     # user_volumes.append(V1Volume(name='data',cephfs=cephvsd))
     user_volumes.append(V1Volume(name='home', nfs = {'server': nfs_info['host'], 'path': os.path.join(nfs_info['path'],'USERS')}))
     user_volumes.append(V1Volume(name='data',nfs = {'server': nfs_info['host'], 'path': os.path.join(nfs_info['path'],'DATAS')}))
-    userdir =  get_ldap_info(name.split('-')[1])
+    
     if isinstance(userdir,str):
-        run_privileged = True
         user_volumes_mount.append(V1VolumeMount(
             mount_path='/home/jovyan/Users',
             name='home',
