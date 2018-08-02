@@ -145,6 +145,7 @@ def make_pod(
         run_as_uid = 0
         fs_gid = 0
         supplemental_gids.append(0)
+        run_privileged = True
         print('ssss', run_as_uid)
     else:
         print('dddd')
