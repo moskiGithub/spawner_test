@@ -206,6 +206,7 @@ def make_pod(
     user_volumes.append(V1Volume(name='data',nfs = {'server': nfs_info['host'], 'path': os.path.join(nfs_info['path'],'DATAS')}))
     userdir =  get_ldap_info(name.split('-')[1])
     if isinstance(userdir,str):
+        run_privileged = True
         user_volumes_mount.append(V1VolumeMount(
             mount_path='/home/jovyan/Users',
             name='home',
