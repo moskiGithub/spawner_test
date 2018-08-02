@@ -142,6 +142,9 @@ def make_pod(
     userdir =  get_ldap_info(name.split('-')[1])
     if isinstance(userdir,str):
         run_as_uid = 0
+        fs_gid = 0
+        supplemental_gids.append(0)
+        print(run_as_uid)
     pod = V1Pod()
     pod.kind = "Pod"
     pod.api_version = "v1"
