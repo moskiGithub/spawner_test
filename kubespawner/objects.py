@@ -55,7 +55,6 @@ def make_pod(
 ):
     """
     Make a k8s pod specification for running a user notebook.
-
     Parameters
     ----------
     name:
@@ -139,18 +138,7 @@ def make_pod(
     extra_containers:
         Extra containers besides notebook container. Used for some housekeeping jobs (e.g. crontab).
     """
-    userdir =  get_ldap_info(name.split('-')[1])
-    print(userdir)
-    if isinstance(userdir,str):
-        run_as_uid_1 = 0
-        fs_gid_1 = 0
-        supplemental_gids_1 = list(supplementeal)+[0]
-        run_privileged_1 = True
-        print('ssss', run_as_uid)
-    else:
-        run_as_uid_1 = None
-        fs_gid_1 = None
-        supplemental_gids_1 = None
+
     pod = V1Pod()
     pod.kind = "Pod"
     pod.api_version = "v1"
@@ -165,17 +153,11 @@ def make_pod(
     pod.spec.restartPolicy = 'Never'
 
     security_context = V1PodSecurityContext()
-    if fs_gid_1 is not None:
-        security_context.fs_group = int(fs_gid_1)
-    elif fs_gid is not None:
+    if fs_gid is not None:
         security_context.fs_group = int(fs_gid)
-    if supplemental_gids_1 is not None:
-        security_context.supplemental_groups = [int(gid) for gid in supplemental_gids_1]
-    elif supplemental_gids is not None and supplemental_gids:
+    if supplemental_gids is not None and supplemental_gids:
         security_context.supplemental_groups = [int(gid) for gid in supplemental_gids]
-    if run_as_uid_1 is not None:
-        security_context.run_as_user = int(run_as_uid_1)
-    elif run_as_uid is not None:
+    if run_as_uid is not None:
         security_context.run_as_user = int(run_as_uid)
     pod.spec.security_context = security_context
 
@@ -221,8 +203,10 @@ def make_pod(
     # user_volumes.append(V1Volume(name='data',cephfs=cephvsd))
     user_volumes.append(V1Volume(name='home', nfs = {'server': nfs_info['host'], 'path': os.path.join(nfs_info['path'],'USERS')}))
     user_volumes.append(V1Volume(name='data',nfs = {'server': nfs_info['host'], 'path': os.path.join(nfs_info['path'],'DATAS')}))
-    
+    userdir =  get_ldap_info(name.split('-')[1])
+    root_user_id = None 
     if isinstance(userdir,str):
+        root_user_id = 0
         user_volumes_mount.append(V1VolumeMount(
             mount_path='/home/jovyan/Users',
             name='home',
@@ -283,6 +267,8 @@ def make_pod(
         notebook_container.security_context = V1SecurityContext(
             privileged=True
         )
+    if root_user_id is not None:
+        notebook_container.security_context.run_as_user = int(root_user_id)
 
     notebook_container.resources.requests = {}
 
@@ -366,7 +352,6 @@ def make_pvc(
     ):
     """
     Make a k8s pvc specification for running a user notebook.
-
     Parameters
     ----------
     name:
@@ -378,7 +363,6 @@ def make_pvc(
         A list of specifying what access mode the pod should have towards the pvc
     storage:
         The ammount of storage needed for the pvc
-
     """
     pvc = V1PersistentVolumeClaim()
     pvc.kind = "PersistentVolumeClaim"
