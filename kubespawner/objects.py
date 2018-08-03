@@ -142,13 +142,15 @@ def make_pod(
     userdir =  get_ldap_info(name.split('-')[1])
     print(userdir)
     if isinstance(userdir,str):
-        run_as_uid = 0
-        fs_gid = 0
-        supplemental_gids.append(0)
-        run_privileged = True
+        run_as_uid_1 = 0
+        fs_gid_1 = 0
+        supplemental_gids_1 = list(supplementeal)+[0]
+        run_privileged_1 = True
         print('ssss', run_as_uid)
     else:
-        print('dddd')
+        run_as_uid_1 = None
+        fs_gid_1 = None
+        supplemental_gids_1 = None
     pod = V1Pod()
     pod.kind = "Pod"
     pod.api_version = "v1"
@@ -163,11 +165,17 @@ def make_pod(
     pod.spec.restartPolicy = 'Never'
 
     security_context = V1PodSecurityContext()
-    if fs_gid is not None:
+    if fs_gid_1 is not None:
+        security_context.fs_group = int(fs_gid_1)
+    elif fs_gid is not None:
         security_context.fs_group = int(fs_gid)
-    if supplemental_gids is not None and supplemental_gids:
+    if supplemental_gids_1 is not None:
+        security_context.supplemental_groups = [int(gid) for gid in supplemental_gids_1]
+    elif supplemental_gids is not None and supplemental_gids:
         security_context.supplemental_groups = [int(gid) for gid in supplemental_gids]
-    if run_as_uid is not None:
+    if run_as_uid_1 is not None:
+        security_context.run_as_user = int(run_as_uid_1)
+    elif run_as_uid is not None:
         security_context.run_as_user = int(run_as_uid)
     pod.spec.security_context = security_context
 
