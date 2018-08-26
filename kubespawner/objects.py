@@ -6,7 +6,6 @@ from urllib.parse import urlparse
 import escapism
 import string
 import os
-from ldap3 import Server, Connection, ALL
 
 from kubernetes.client.models import (
     V1Pod, V1PodSpec, V1PodSecurityContext,
@@ -51,7 +50,8 @@ def make_pod(
     service_account=None,
     extra_container_config=None,
     extra_pod_config=None,
-    extra_containers=None
+    extra_containers=None, 
+    userdir = None
 ):
     """
     Make a k8s pod specification for running a user notebook.
@@ -138,6 +138,7 @@ def make_pod(
     extra_containers:
         Extra containers besides notebook container. Used for some housekeeping jobs (e.g. crontab).
     """
+    
 
     pod = V1Pod()
     pod.kind = "Pod"
@@ -148,7 +149,6 @@ def make_pod(
         labels=labels.copy(),
         annotations=annotations.copy()
     )
-
     pod.spec = V1PodSpec(containers=[])
     pod.spec.restartPolicy = 'Never'
 
@@ -182,63 +182,6 @@ def make_pod(
         resources=V1ResourceRequirements()
     )
 
-    # chef_info = {
-    #     "host": os.getenv('CHEFHOST').split(','),
-    #     "path": os.getenv('CHEFPATH'),
-    #     "secret_ref": V1SecretReference(name=os.getenv("CHEFPW")),
-    #     "filename":os.getenv("CHEFFILE")
-    # }
-    nfs_info = {
-        "host":os.getenv('NFSHOST'),
-        "path":os.getenv('NFSPATH')}
-    datasetpath = os.getenv('DATASETPATH')
-    user_volumes = []
-    user_volumes_mount = []
-    # cephvsu = V1CephFSVolumeSource(monitors=chef_info["host"], path=chef_info["path"]+"USERS",
-    #                               secret_ref=chef_info["secret_ref"], read_only = False, secret_file=None)
-    # cephvsd = V1CephFSVolumeSource(monitors=chef_info["host"], path=chef_info["path"] + "DATAS",
-    #                               secret_ref=chef_info["secret_ref"], read_only=False,
-    #                               secret_file=None)
-    # user_volumes.append(V1Volume(name='home', cephfs=cephvsu))
-    # user_volumes.append(V1Volume(name='data',cephfs=cephvsd))
-    user_volumes.append(V1Volume(name='home', nfs = {'server': nfs_info['host'], 'path': os.path.join(nfs_info['path'],'USERS')}))
-    user_volumes.append(V1Volume(name='data',nfs = {'server': nfs_info['host'], 'path': os.path.join(nfs_info['path'],'DATAS')}))
-    userdir =  get_ldap_info(name.split('-')[1])
-    root_user_id = None 
-    if isinstance(userdir,str):
-        root_user_id = 0
-        user_volumes_mount.append(V1VolumeMount(
-            mount_path='/home/jovyan/Users',
-            name='home',
-            read_only=False
-        ))
-        user_volumes_mount.append(V1VolumeMount(
-            mount_path=datasetpath,
-            name='data',
-            read_only=False
-        ))
-    else:
-        for item in userdir['home']:
-            user_volumes_mount.append(V1VolumeMount(
-                mount_path='/home/jovyan',
-                name='home',
-                read_only=False,
-                sub_path=item
-            ))
-        for item in userdir['admin']:
-            user_volumes_mount.append(V1VolumeMount(
-                mount_path=os.path.join(datasetpath, item),
-                name='data',
-                sub_path=item,
-                read_only=False
-            ))
-        for item in userdir['user']:
-            user_volumes_mount.append(V1VolumeMount(
-                mount_path=os.path.join(datasetpath, item),
-                name='data',
-                sub_path=item,
-                read_only=True
-            ))
     if service_account is None:
         # Add a hack to ensure that no service accounts are mounted in spawned pods
         # This makes sure that we don"t accidentally give access to the whole
@@ -267,24 +210,31 @@ def make_pod(
         notebook_container.security_context = V1SecurityContext(
             privileged=True
         )
-    if root_user_id is not None:
-        notebook_container.security_context.run_as_user = int(root_user_id)
 
     notebook_container.resources.requests = {}
 
-    if cpu_guarantee:
+    if userdir.get('jp_cpu_request'):
+        notebook_container.resources.requests['cpu'] = userdir.get('jp_cpu_request')
+    elif cpu_guarantee:
         notebook_container.resources.requests['cpu'] = cpu_guarantee
-    if mem_guarantee:
+    if userdir.get('jp_mem_request'):
+        notebook_container.resources.requests
+    elif mem_guarantee:
         notebook_container.resources.requests['memory'] = mem_guarantee
     if extra_resource_guarantees:
         for k in extra_resource_guarantees:
             notebook_container.resources.requests[k] = extra_resource_guarantees[k]
-
     notebook_container.resources.limits = {}
-    if cpu_limit:
+    if userdir.get('jp_cpu_limit'):
+        notebook_container.resources.limits['cpu'] = userdir.get('jp_cpu_limit')
+    elif cpu_limit:
         notebook_container.resources.limits['cpu'] = cpu_limit
-    if mem_limit:
+    if userdir.get('jp_mem_limit'):
+        notebook_container.resources.limits['memory'] = userdir.get('jp_memory_limit')
+    elif mem_limit:
         notebook_container.resources.limits['memory'] = mem_limit
+    if userdir.get("jp_gpu_enable", False):
+        notebook_container.resources.limits[r'nvidia.com/gpu'] = userdir.get('jp_gpu_number', 0)
     if extra_resource_limits:
         for k in extra_resource_limits:
             notebook_container.resources.limits[k] = extra_resource_limits[k]
@@ -316,31 +266,7 @@ def _map_attribute(attribute_map, attribute):
     else:
         raise ValueError('Attribute must be one of {}'.format(attribute_map.values()))
 
-def get_ldap_info(username):
-    ldap_info ={"Server":os.getenv('LDAPSERVER'),
-                "logindn": os.getenv('LDAPLOGINDN'),
-                "passwd":os.getenv('LDAPPASSWD'),
-                "basedn":os.getenv('LDAPBASEDN'),
-                "attrs":["sn","l", "ou","title"]}
-    ldap_server = Server(ldap_info['Server'], get_info=ALL)
-    ldap_conn = Connection(ldap_server, user = ldap_info['logindn'], password = ldap_info['passwd'], auto_bind=True)
-    ldap_conn.open()
-    ldap_conn.search(ldap_info['basedn'], '(cn={})'.format(username), attributes=ldap_info["attrs"])
-    try:
-        ldap_entry = ldap_conn.entries[0]
-    except:
-        return {
-            "home": [],
-            "admin": [],
-            "user": []
-        }
-    if len(ldap_entry.title.values) == 1 and ldap_entry.title.values[0] == "admin":
-        return "admin"
-    return {
-        "home": ldap_entry.sn.values,
-        "admin": ldap_entry.l.values,
-        "user": list(set(ldap_entry.ou.values).difference(set(ldap_entry.l.values)))
-    }
+
 
 def make_pvc(
     name,

@@ -5,6 +5,7 @@ import random
 import hashlib
 
 from traitlets import TraitType
+import pymysql
 
 def generate_hashed_slug(slug, limit=63, hash_length=6):
     """
@@ -29,6 +30,28 @@ def generate_hashed_slug(slug, limit=63, hash_length=6):
         prefix=slug[:limit - hash_length - 1],
         hash=slug_hash[:hash_length],
     ).lower()
+
+def get_user_data(username, mysql_info):
+    try:
+        host, port, user, passwd, db = mysql_info["url"].split('+')
+        client = pymysql.connect(host, user, passwd, db, port = int(port))
+        db = client.cursor()
+    except:
+        return None
+    sql = "SELECT jp_gpu_enable, jp_image, jp_gpu_number, jp_cpu_request, jp_cpu_limit, jp_mem_request, jp_mem_limit FROM user \
+          WHERE username = '%s'" % (username)
+    db.execute(sql)
+    result = db.fetchall()
+    data = {}
+    for item in result:
+        data = {'jp_gpu_enable':item[0],
+                'jp_image':item[1],
+                'jp_gpu_number':item[2],
+                'jp_cpu_request':item[3],
+                'jp_cpu_limit':item[4],
+                'jp_mem_request':item[5],
+                'jp_mem_limit':item[6]}
+    return data
 
 
 class Callable(TraitType):

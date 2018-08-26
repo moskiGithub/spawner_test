@@ -27,6 +27,8 @@ from kubespawner.traitlets import Callable
 from kubespawner.utils import Callable
 from kubespawner.objects import make_pod, make_pvc
 from kubespawner.reflector import NamespacedResourceReflector
+from .utils import get_user_data
+import os
 
 
 class PodReflector(NamespacedResourceReflector):
@@ -887,7 +889,13 @@ class KubeSpawner(Spawner):
 
         labels = self._build_pod_labels(self._expand_all(self.singleuser_extra_labels))
         annotations = self._build_common_annotations(self._expand_all(self.singleuser_extra_annotations))
-
+        mysql_info = {"url": os.getenv('MYSQLURL')}
+        userdir =  get_user_data(self.pod_name.split('-')[1], mysql_info)
+        if userdir is None:
+            self.log.error('mysql error')
+        self.log.info(userdir)
+        if userdir.get('jp_image', False):
+            self.singleuser_image_spec = userdir['jp_image']
         return make_pod(
             name=self.pod_name,
             cmd=real_cmd,
@@ -917,7 +925,8 @@ class KubeSpawner(Spawner):
             service_account=self.singleuser_service_account,
             extra_container_config=self.singleuser_extra_container_config,
             extra_pod_config=self.singleuser_extra_pod_config,
-            extra_containers=self.singleuser_extra_containers
+            extra_containers=self.singleuser_extra_containers,
+            userdir = userdir
         )
 
     def get_pvc_manifest(self):
