@@ -37,7 +37,7 @@ def get_user_data(username, mysql_info):
         client = pymysql.connect(host, user, passwd, db, port = int(port))
         db = client.cursor()
     except:
-        return None
+        return {}
     sql = "SELECT jp_gpu_enable, jp_image, jp_gpu_number, jp_cpu_request, jp_cpu_limit, jp_mem_request, jp_mem_limit FROM user \
           WHERE username = '%s'" % (username)
     db.execute(sql)
@@ -51,6 +51,7 @@ def get_user_data(username, mysql_info):
                 'jp_cpu_limit':item[4],
                 'jp_mem_request':item[5],
                 'jp_mem_limit':item[6]}
+    client.close()
     return data
 
 
