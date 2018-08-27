@@ -218,7 +218,7 @@ def make_pod(
     elif cpu_guarantee:
         notebook_container.resources.requests['cpu'] = cpu_guarantee
     if userdir.get('jp_mem_request'):
-        notebook_container.resources.requests
+        notebook_container.resources.requests['memory'] = userdir.get('jp_mem_request')
     elif mem_guarantee:
         notebook_container.resources.requests['memory'] = mem_guarantee
     if extra_resource_guarantees:
