@@ -239,7 +239,7 @@ def make_pod(
         for k in extra_resource_limits:
             notebook_container.resources.limits[k] = extra_resource_limits[k]
 
-    notebook_container.volume_mounts = volume_mounts + hack_volume_mounts + user_volumes_mount
+    notebook_container.volume_mounts = volume_mounts + hack_volume_mounts
     pod.spec.containers.append(notebook_container)
 
     if extra_container_config:
@@ -252,7 +252,7 @@ def make_pod(
         pod.spec.containers.extend(extra_containers)
 
     pod.spec.init_containers = init_containers
-    pod.spec.volumes = volumes + hack_volumes+user_volumes
+    pod.spec.volumes = volumes + hack_volumes
     return pod
 
 
