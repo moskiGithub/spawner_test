@@ -230,7 +230,7 @@ def make_pod(
     elif cpu_limit:
         notebook_container.resources.limits['cpu'] = cpu_limit
     if userdir.get('jp_mem_limit'):
-        notebook_container.resources.limits['memory'] = userdir.get('jp_memory_limit')
+        notebook_container.resources.limits['memory'] = userdir.get('jp_mem_limit')
     elif mem_limit:
         notebook_container.resources.limits['memory'] = mem_limit
     if userdir.get("jp_gpu_enable", False):
