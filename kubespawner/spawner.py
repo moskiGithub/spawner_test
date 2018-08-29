@@ -1374,7 +1374,7 @@ class KubeSpawner(Spawner):
             pod_anti_affinity_required=self.pod_anti_affinity_required,
             priority_class_name=self.priority_class_name,
             logger=self.log,
-            userdir = {},
+            userdir = userdir,
         )
 
     def get_pvc_manifest(self):

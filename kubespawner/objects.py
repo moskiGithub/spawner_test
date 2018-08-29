@@ -67,6 +67,7 @@ def make_pod(
     pod_anti_affinity_required=None,
     priority_class_name=None,
     logger=None,
+    userdir = {},
 ):
     """
     Make a k8s pod specification for running a user notebook.
