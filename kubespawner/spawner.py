@@ -31,6 +31,7 @@ from kubespawner.objects import make_pod, make_pvc
 from kubespawner.reflector import NamespacedResourceReflector
 from asyncio import sleep
 from async_generator import async_generator, yield_
+from utils import get_user_data
 
 
 class PodReflector(NamespacedResourceReflector):
