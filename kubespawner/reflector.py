@@ -6,10 +6,13 @@ import time
 import threading
 
 from traitlets.config import LoggingConfigurable
-from traitlets import Any, Dict, Unicode
-from kubernetes import client, config, watch
-from tornado.ioloop import IOLoop
+from traitlets import Any, Dict, Int, Unicode
+from kubernetes import config, watch
+# This is kubernetes client implementation specific, but we need to know
+# whether it was a network or watch timeout.
+from urllib3.exceptions import ReadTimeoutError
 
+from .clients import shared_client
 
 class NamespacedResourceReflector(LoggingConfigurable):
     """
@@ -82,6 +85,41 @@ class NamespacedResourceReflector(LoggingConfigurable):
         """
     )
 
+    request_timeout = Int(
+        60,
+        config=True,
+        help="""
+        Network timeout for kubernetes watch.
+
+        Trigger watch reconnect when a given request is taking too long,
+        which can indicate network issues.
+        """
+    )
+
+    timeout_seconds = Int(
+        10,
+        config=True,
+        help="""
+        Timeout for kubernetes watch.
+
+        Trigger watch reconnect when no watch event has been received.
+        This will cause a full reload of the currently existing resources
+        from the API server.
+        """
+    )
+
+    restart_seconds = Int(
+        30,
+        config=True,
+        help="""
+        Maximum time before restarting a watch.
+
+        The watch will be restarted at least this often,
+        even if events are still arriving.
+        Avoids trusting kubernetes watch to yield all events,
+        which seems to not be a safe assumption.
+        """)
+
     on_failure = Any(help="""Function to be called when the reflector gives up.""")
 
     def __init__(self, *args, **kwargs):
@@ -92,7 +130,7 @@ class NamespacedResourceReflector(LoggingConfigurable):
             config.load_incluster_config()
         except config.ConfigException:
             config.load_kube_config()
-        self.api = getattr(client, self.api_group_name)()
+        self.api = shared_client(self.api_group_name)
 
         # FIXME: Protect against malicious labels?
         self.label_selector = ','.join(['{}={}'.format(k, v) for k, v in self.labels.items()])
@@ -103,6 +141,9 @@ class NamespacedResourceReflector(LoggingConfigurable):
 
         self.start()
 
+    def __del__(self):
+        self.stop()
+
     def _list_and_update(self):
         """
         Update current list of resources by doing a full fetch.
@@ -112,7 +153,8 @@ class NamespacedResourceReflector(LoggingConfigurable):
         initial_resources = getattr(self.api, self.list_method_name)(
             self.namespace,
             label_selector=self.label_selector,
-            field_selector=self.field_selector
+            field_selector=self.field_selector,
+            _request_timeout=self.request_timeout,
         )
         # This is an atomic operation on the dictionary!
         self.resources = {p.metadata.name: p for p in initial_resources.items}
@@ -142,21 +184,46 @@ class NamespacedResourceReflector(LoggingConfigurable):
         and as long as we don't try to mutate them (do a 'fetch / modify /
         update' cycle on them), we should be ok!
         """
+        selectors = []
+        log_name = ""
+        if self.label_selector:
+            selectors.append("label selector=%r" % self.label_selector)
+        if self.field_selector:
+            selectors.append("field selector=%r" % self.field_selector)
+        log_selector = ', '.join(selectors)
+
         cur_delay = 0.1
+
+        self.log.info(
+            "watching for %s with %s in namespace %s",
+            self.kind, log_selector, self.namespace,
+        )
         while True:
-            self.log.info("watching for %s with label selector %s / field selector %s in namespace %s", self.kind, self.label_selector, self.field_selector, self.namespace)
+            self.log.debug("Connecting %s watcher", self.kind)
+            start = time.monotonic()
             w = watch.Watch()
             try:
                 resource_version = self._list_and_update()
                 if not self.first_load_future.done():
                     # signal that we've loaded our initial data
                     self.first_load_future.set_result(None)
+                watch_args = {
+                    'namespace': self.namespace,
+                    'label_selector': self.label_selector,
+                    'field_selector': self.field_selector,
+                    'resource_version': resource_version,
+                }
+                if self.request_timeout:
+                    # set network receive timeout
+                    watch_args['_request_timeout'] = self.request_timeout
+                if self.timeout_seconds:
+                    # set watch timeout
+                    watch_args['timeout_seconds'] = self.timeout_seconds
+                # in case of timeout_seconds, the w.stream just exits (no exception thrown)
+                # -> we stop the watcher and start a new one
                 for ev in w.stream(
                         getattr(self.api, self.list_method_name),
-                        self.namespace,
-                        label_selector=self.label_selector,
-                        field_selector=self.field_selector,
-                        resource_version=resource_version,
+                        **watch_args
                 ):
                     cur_delay = 0.1
                     resource = ev['object']
@@ -167,8 +234,20 @@ class NamespacedResourceReflector(LoggingConfigurable):
                         # This is an atomic operation on the dictionary!
                         self.resources[resource.metadata.name] = resource
                     if self._stop_event.is_set():
+                        self.log.info("%s watcher stopped", self.kind)
                         break
-
+                    watch_duration = time.monotonic() - start
+                    if watch_duration >= self.restart_seconds:
+                        self.log.debug(
+                            "Restarting %s watcher after %i seconds",
+                            self.kind, watch_duration,
+                        )
+                        break
+            except ReadTimeoutError:
+                # network read time out, just continue and restart the watch
+                # this could be due to a network problem or just low activity
+                self.log.warning("Read timeout watching %s, reconnecting", self.kind)
+                continue
             except Exception:
                 cur_delay = cur_delay * 2
                 if cur_delay > 30:
@@ -179,11 +258,15 @@ class NamespacedResourceReflector(LoggingConfigurable):
                 self.log.exception("Error when watching resources, retrying in %ss", cur_delay)
                 time.sleep(cur_delay)
                 continue
+            else:
+                # no events on watch, reconnect
+                self.log.debug("%s watcher timeout", self.kind)
             finally:
                 w.stop()
                 if self._stop_event.is_set():
                     self.log.info("%s watcher stopped", self.kind)
                     break
+        self.log.warning("%s watcher finished", self.kind)
 
     def start(self):
         """
@@ -206,3 +289,6 @@ class NamespacedResourceReflector(LoggingConfigurable):
 
     def stop(self):
         self._stop_event.set()
+
+    def stopped(self):
+        return self._stop_event.is_set()

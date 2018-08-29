@@ -1,8 +1,7 @@
-=========
-Traitlets
-=========
-
-Module: :mod:`kubespawner.traitlets`
-------------------------------------
+================
+Custom Traitlets
+================
 
 .. automodule:: kubespawner.traitlets
+
+.. autoclass:: Callable

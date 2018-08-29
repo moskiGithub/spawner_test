@@ -1,0 +1,25 @@
+language: python
+sudo: required
+dist: xenial
+python:
+  - nightly
+  - 3.6
+  - 3.5
+
+# install dependencies
+install:
+  - pip install --pre -e ".[test]"
+  - source ci/minikube.env
+  - ./ci/install-kube.sh
+
+# command to run tests
+script:
+  - pytest --cov kubespawner -v
+after_success:
+  - pip install codecov
+  - codecov
+
+matrix:
+  fast_finish: true
+  allow_failures:
+    - python: nightly
